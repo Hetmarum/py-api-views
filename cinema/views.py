@@ -10,7 +10,7 @@ from cinema.serializers import (
     MovieSerializer,
     GenreSerializer,
     ActorSerializer,
-    CinemaHallSerializer
+    CinemaHallSerializer,
 )
 
 
@@ -51,7 +51,7 @@ def movie_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class GenreAPIView(APIView):
+class GenreList(APIView):
     def get(self, request):
         genres = Genre.objects.all()
         serializer = GenreSerializer(genres, many=True)
@@ -64,7 +64,29 @@ class GenreAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ActorGenericAPIView(
+class GenreDetail(APIView):
+    def get_object(self, pk):
+        return get_object_or_404(Genre, pk=pk)
+
+    def get(self, request, pk):
+        genre = self.get_object(pk)
+        serializer = GenreSerializer(genre)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        genre = self.get_object(pk)
+        serializer = GenreSerializer(genre, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        genre = self.get_object(pk)
+        genre.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ActorList(
     generics.GenericAPIView,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -77,6 +99,25 @@ class ActorGenericAPIView(
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class ActorDetail(
+    generics.GenericAPIView,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    queryset = Actor.objects.all()
+    serializer_class = ActorSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 
 class CinemaHallViewSet(
